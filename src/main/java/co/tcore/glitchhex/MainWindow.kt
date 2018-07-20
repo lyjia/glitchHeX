@@ -1,15 +1,16 @@
 package co.tcore.glitchhex
 
-import java.awt.EventQueue
+import co.tcore.glitchhex.controls.ImagePanel
+import org.exbin.deltahex.DataChangedListener
 import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
 import javax.swing.*
 
 import org.exbin.deltahex.swing.CodeArea
 import org.exbin.utils.binary_data.ByteArrayEditableData
-import java.awt.BorderLayout
-import java.awt.Dimension
-import java.io.File
+import java.awt.*
+import java.awt.event.ComponentAdapter
+import java.io.*
 
 
 class MainWindow() : JFrame() {
@@ -20,6 +21,7 @@ class MainWindow() : JFrame() {
     private var fileCurrent: File? = null
     private lateinit var paneHexEditor: CodeArea
     private lateinit var paneImageOuter: JScrollPane
+    private lateinit var paneImagePreview: ImagePanel
 
     /* =================================================
     UI SET UP
@@ -87,12 +89,17 @@ class MainWindow() : JFrame() {
         //// the left pane -- hex editor
         this.paneHexEditor = CodeArea()
         this.paneHexEditor.minimumSize = Dimension(680, 300)
+        this.paneHexEditor.font = Font("Consolas", 0, 16)
 
         val theData = ByteArrayEditableData("".toByteArray()) //in class header
         paneHexEditor.data = theData
 
         //// the right pane -- image preview
+        this.paneImagePreview = ImagePanel( paneHexEditor.data.dataInputStream )
+        this.paneImagePreview.layout = GridBagLayout()
         this.paneImageOuter = JScrollPane()
+        val gbc = GridBagConstraints()
+        this.paneImageOuter.add(this.paneImagePreview, gbc)
 
         //// main splitter
         val paneSplitMain = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, paneHexEditor, paneImageOuter)
@@ -100,8 +107,10 @@ class MainWindow() : JFrame() {
         paneSplitMain.dividerLocation = 680
         paneSplitMain.dividerSize = 1
 
-        add(paneSplitMain, BorderLayout.CENTER)
+        contentPane.add(paneSplitMain, BorderLayout.CENTER)
 
+        // set event handlers last (because of lateinit)
+        this.paneHexEditor.addDataChangedListener { onDataChanged() }
 
     }
 
@@ -129,17 +138,34 @@ class MainWindow() : JFrame() {
 
     }
 
+    private fun onDataChanged() {
+        System.out.println("on data change")
+        val o = ByteArrayOutputStream()
+        this.paneHexEditor.data.saveToStream( o )
+        this.paneImagePreview.readImage( ByteArrayInputStream( o.toByteArray() ) )
+    }
+
     /* =================================================
         ByteEditor Manipulation
     ================================================= */
     private fun setCurrentFile(theFile: File?, bytes: ByteArray?) {
+
         if (theFile != null && bytes != null) {
+
             this.fileCurrentPath = theFile.absolutePath
             this.fileCurrent = theFile
             setNewWindowTitle(theFile)
+
+            // set hex editor
             val theNewData = ByteArrayEditableData(bytes)
             this.paneHexEditor.data = theNewData
+
+//            // set image preview
+//            val i = ByteArrayInputStream(bytes)
+//            paneImagePreview.readImage( i )
+
         }
+
     }
 
     /* =================================================
@@ -165,7 +191,7 @@ class MainWindow() : JFrame() {
         }
 
         val fStream = theFile.inputStream()
-        var bytes = ByteArray(size = theFile.length().toInt())
+        val bytes = ByteArray(size = theFile.length().toInt())
 
         try {
             fStream.read(bytes, 0, bytes.size)
@@ -204,14 +230,16 @@ class MainWindow() : JFrame() {
 
     private fun setNewWindowTitle(file: File?) {
         val version = this.javaClass.`package`.implementationVersion
-        var filen = "(Nothing loaded)"
+        var filen = "Untitled"
+        var ftype : String? = "no format"
         val prefix = this.WINDOW_TITLE_PREFIX
 
         if (file != null) {
             filen = file.absolutePath
+            ftype = FileUtil.identifyFileType(file)
         }
 
-        val final = "$prefix v$version - $filen"
+        val final = "$prefix - $filen ($ftype)"
         setTitle(final)
     }
 
