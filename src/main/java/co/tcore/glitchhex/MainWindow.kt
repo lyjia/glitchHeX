@@ -131,15 +131,21 @@ class MainWindow() : JFrame() {
     }
 
     private fun onMenuFileSaveNewVersion() {
-
+        saveFileNewVersionAuto()
     }
 
     private fun onMenuFileSaveAs() {
 
+        val choose = JFileChooser()
+        val ret = choose.showSaveDialog(this)
+
+        if (ret == JFileChooser.APPROVE_OPTION) {
+            saveFileAs(choose.selectedFile)
+        }
     }
 
     private fun onDataChanged() {
-        System.out.println("on data change")
+        //System.out.println("on data change")
         val o = ByteArrayOutputStream()
         this.paneHexEditor.data.saveToStream( o )
         this.paneImagePreview.readImage( ByteArrayInputStream( o.toByteArray() ) )
@@ -212,7 +218,33 @@ class MainWindow() : JFrame() {
 
     }
 
-    private fun saveFileAs(filenameWithPath: String) {
+    private fun saveFileAs(filenameWithPath:  File) {
+        System.out.println("About to save to ${filenameWithPath.toPath()}")
+
+        if (filenameWithPath.exists()) {
+            // deal with it
+
+        }
+//
+//        if (!filenameWithPath.canWrite()) {
+//            JOptionPane.showMessageDialog(this, "Error: Cannot write to designated file: ${filenameWithPath.toPath()}")
+//            return
+//        }
+
+
+        if (filenameWithPath.isFile) {
+            JOptionPane.showMessageDialog(this, "Error: File is already a file!")
+            return
+        }
+
+        val fStream = filenameWithPath.outputStream()
+        //System.out.println("on data change")
+        val o = ByteArrayOutputStream()
+        this.paneHexEditor.data.saveToStream( o )
+        fStream.write( o.toByteArray() )
+        fStream.close()
+
+        System.out.println("Buffer flushed to ${filenameWithPath.toPath()} successfully")
 
     }
 

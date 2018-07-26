@@ -14,7 +14,42 @@
 
     <dependencies>
 
-        <!-- https://mvnrepository.com/artifact/org.exbin.utils/exbin-binary_data -->
+        <!-- https://mvnrepository.com/artifact/org.exbin.deltahex/deltahex-core -->
+        <dependency>
+            <groupId>org.exbin.deltahex</groupId>
+            <artifactId>deltahex-core</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.exbin.deltahex/deltahex-operation -->
+        <dependency>
+            <groupId>org.exbin.deltahex</groupId>
+            <artifactId>deltahex-operation</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.exbin.deltahex/deltahex-swing -->
+        <dependency>
+            <groupId>org.exbin.deltahex</groupId>
+            <artifactId>deltahex-swing</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.exbin.deltahex/deltahex-operation-swing -->
+        <dependency>
+            <groupId>org.exbin.deltahex</groupId>
+            <artifactId>deltahex-operation-swing</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.exbin.deltahex/deltahex-delta -->
+        <dependency>
+            <groupId>org.exbin.deltahex</groupId>
+            <artifactId>deltahex-delta</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.exbin.utils</groupId>
             <artifactId>exbin-binary_data</artifactId>

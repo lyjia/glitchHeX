@@ -27,6 +27,9 @@ class ImagePanel(bytesToInit: InputStream) : JPanel() {
         } catch (ex: IOException) {
             System.out.println("Exception rendering image: ${ex.message}")
             this.image = null
+        } catch (ex: ArrayIndexOutOfBoundsException) {
+            System.out.println("Exception rendering image: ${ex.message}")
+            this.image = null
         }
     }
 
