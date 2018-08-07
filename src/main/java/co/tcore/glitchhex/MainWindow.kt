@@ -11,14 +11,23 @@ import org.exbin.utils.binary_data.ByteArrayEditableData
 import java.awt.*
 import java.awt.event.ComponentAdapter
 import java.io.*
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.regex.Pattern
+import javax.swing.UIManager
 
 
 class MainWindow() : JFrame() {
 
     private val WINDOW_TITLE_PREFIX = "glitchHeX"
 
+    val DATESTAMP_STRFTIME = "_yyyyMMdd-HHmmss"
+    val DATESTAMP_REGEX = Regex("""_\d{8}\-\d{6}${'$'}""")
+
+
     private var fileCurrentPath = ""
     private var fileCurrent: File? = null
+    private var fileCurrentChanged = false
     private lateinit var paneHexEditor: CodeArea
     private lateinit var paneImageOuter: JScrollPane
     private lateinit var paneImagePreview: ImagePanel
@@ -56,18 +65,21 @@ class MainWindow() : JFrame() {
         menuFileOpen.mnemonic = KeyEvent.VK_O
         menuFileOpen.toolTipText = "Open an image file for editing..."
         menuFileOpen.addActionListener { _: ActionEvent -> onMenuFileOpen() }
+        menuFileOpen.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK)
         menuFile.add(menuFileOpen)
 
-        val menuFileSaveNewVersion = JMenuItem("Save new version")
+        val menuFileSaveNewVersion = JMenuItem("Save a copy as a new version")
         menuFileSaveNewVersion.mnemonic = KeyEvent.VK_S
         menuFileSaveNewVersion.toolTipText = "Saves the current file with a new, automatically-generated filename"
         menuFileSaveNewVersion.addActionListener { _: ActionEvent -> onMenuFileSaveNewVersion() }
+        menuFileSaveNewVersion.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK)
         menuFile.add(menuFileSaveNewVersion)
 
         val menuFileSaveAs = JMenuItem("Save as...")
         menuFileSaveAs.mnemonic = KeyEvent.VK_A
         menuFileSaveAs.toolTipText = "Saves the current file with a new filename of your choosing, and sets that to be the current file."
         menuFileSaveAs.addActionListener { _: ActionEvent -> onMenuFileSaveAs() }
+        menuFileSaveAs.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_S, KeyEvent.ALT_DOWN_MASK + KeyEvent.CTRL_DOWN_MASK)
         menuFile.add(menuFileSaveAs)
 
         menuFile.add(JSeparator())
@@ -84,12 +96,15 @@ class MainWindow() : JFrame() {
     }
 
     private fun createMainBody() {
+
+        UIManager.setLookAndFeel (UIManager.getSystemLookAndFeelClassName() )
+
         this.minimumSize = Dimension(750, 300)
 
         //// the left pane -- hex editor
         this.paneHexEditor = CodeArea()
         this.paneHexEditor.minimumSize = Dimension(680, 300)
-        this.paneHexEditor.font = Font("Consolas", 0, 16)
+        this.paneHexEditor.font = Font("Fixedsys Excelsior 3.01", 0, 16)
 
         val theData = ByteArrayEditableData("".toByteArray()) //in class header
         paneHexEditor.data = theData
@@ -149,6 +164,7 @@ class MainWindow() : JFrame() {
         val o = ByteArrayOutputStream()
         this.paneHexEditor.data.saveToStream( o )
         this.paneImagePreview.readImage( ByteArrayInputStream( o.toByteArray() ) )
+        fileCurrentChanged = true
     }
 
     /* =================================================
@@ -214,7 +230,33 @@ class MainWindow() : JFrame() {
 
     }
 
+    // autogenerates a filename from the current datetime
     private fun saveFileNewVersionAuto() {
+
+        if (fileCurrent != null) {
+            var fname = fileCurrent!!.nameWithoutExtension
+            val ext = fileCurrent!!.extension
+
+            val curtime = LocalDateTime.now()
+
+            // build date string
+            val fmter = DateTimeFormatter.ofPattern(DATESTAMP_STRFTIME)
+            val fmted = curtime.format(fmter)
+
+            fname = fname.replace(DATESTAMP_REGEX, "")
+
+            val newFilename = "${fname}${fmted}.${ext}"
+            val newFileWithPath = File("${fileCurrent!!.parent}\\${newFilename}")
+
+            //assemble file object and pass to saveAsInternal()
+            saveFileInternal(newFileWithPath)
+
+
+        } else {
+            //do nothing
+            return
+        }
+
 
     }
 
@@ -222,34 +264,35 @@ class MainWindow() : JFrame() {
         System.out.println("About to save to ${filenameWithPath.toPath()}")
 
         if (filenameWithPath.exists()) {
-            // deal with it
+            val ret = JOptionPane.showConfirmDialog(this, "File ${filenameWithPath.toPath()} already exists. Are you sure you want to overwrite it?", "Confirm file overwrite", JOptionPane.YES_NO_OPTION)
+
+            if (ret == JOptionPane.NO_OPTION) {
+                return
+            }
 
         }
+
+        saveFileInternal(filenameWithPath)
+
+    }
+
+    private fun saveFileInternal(filenameWithPath: File) {
 //
 //        if (!filenameWithPath.canWrite()) {
 //            JOptionPane.showMessageDialog(this, "Error: Cannot write to designated file: ${filenameWithPath.toPath()}")
 //            return
 //        }
 
-
-        if (filenameWithPath.isFile) {
-            JOptionPane.showMessageDialog(this, "Error: File is already a file!")
-            return
-        }
-
         val fStream = filenameWithPath.outputStream()
         //System.out.println("on data change")
         val o = ByteArrayOutputStream()
-        this.paneHexEditor.data.saveToStream( o )
-        fStream.write( o.toByteArray() )
+        this.paneHexEditor.data.saveToStream(o)
+        fStream.write(o.toByteArray())
         fStream.close()
 
+        fileCurrentChanged = false
+
         System.out.println("Buffer flushed to ${filenameWithPath.toPath()} successfully")
-
-    }
-
-    private fun saveFileOverwrite() {
-
     }
 
     private fun flushCurrentBuffer() {
